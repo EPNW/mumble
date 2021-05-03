@@ -150,6 +150,10 @@ public:
 	QSslKey qskKey;
 
 	QList< QSslError::SslError > qlAllowedSslClientErrors;
+	bool bMctsIncludeHostCAs;
+	bool bMctsIncludeOwnCAs;
+	bool bMctsIncludeOwnCert;
+	QList< QSslCertificate > qlMcts;
 
 #if defined(USE_QSSLDIFFIEHELLMANPARAMETERS)
 	QSslDiffieHellmanParameters qsdhpDHParams;
