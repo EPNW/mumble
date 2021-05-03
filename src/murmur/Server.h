@@ -154,6 +154,7 @@ public:
 	bool bMctsIncludeOwnCAs;
 	bool bMctsIncludeOwnCert;
 	QList< QSslCertificate > qlMcts;
+	bool bUsernameMustMatchCertCommonName;
 
 #if defined(USE_QSSLDIFFIEHELLMANPARAMETERS)
 	QSslDiffieHellmanParameters qsdhpDHParams;
