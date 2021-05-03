@@ -227,12 +227,15 @@ quint16 Connection::localPort() const {
 	return qtsSocket->localPort();
 }
 
+// Returns the peer's chain of digital certificates, starting with the peer's immediate certificate
+// and ending with the CA's certificate.
 QList< QSslCertificate > Connection::peerCertificateChain() const {
-	const QSslCertificate cert = qtsSocket->peerCertificate();
-	if (cert.isNull())
-		return QList< QSslCertificate >();
-	else
-		return qtsSocket->peerCertificateChain() << cert;
+	// The documentation of QSslSocket::peerCertificateChain() actually says nothing
+	// about the order of the certificates in the chain, the sentence above is taken
+	// from QSslConfiguration::peerCertificateChain(). Through tests and by looking
+	// into Qt's source code it was validated, that these two functions do the
+	// same thing.
+	return qtsSocket->peerCertificateChain();
 }
 
 QSslCipher Connection::sessionCipher() const {

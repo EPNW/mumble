@@ -745,7 +745,7 @@ void ServerHandler::serverConnectionConnected() {
 	qscCipher = connection->sessionCipher();
 
 	if (!qscCert.isEmpty()) {
-		const QSslCertificate &qsc = qscCert.last();
+		const QSslCertificate &qsc = qscCert.first();
 		qbaDigest                  = sha1(qsc.publicKey().toDer());
 		bUdp                       = database->getUdp(qbaDigest);
 	} else {
