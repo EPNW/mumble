@@ -1898,6 +1898,9 @@ void Server::msgVersion(ServerUser *uSource, MumbleProto::Version &msg) {
 					 .arg(uSource->qsOS)
 					 .arg(uSource->qsOSVersion)
 					 .arg(uSource->qsRelease));
+
+	// Respond with the server version.
+	sendVersionMessage(uSource);
 }
 
 void Server::msgUserList(ServerUser *uSource, MumbleProto::UserList &msg) {
@@ -2197,8 +2200,8 @@ void Server::msgPluginDataTransmission(ServerUser *sender, MumbleProto::PluginDa
 
 	// Copy needed data from message in order to be able to remove info about receivers from the message as this doesn't
 	// matter for the client
-	size_t receiverAmount                                                                 = msg.receiversessions_size();
-	const ::google::protobuf::RepeatedField<::google::protobuf::uint32 > receiverSessions = msg.receiversessions();
+	size_t receiverAmount = msg.receiversessions_size();
+	const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 > receiverSessions = msg.receiversessions();
 
 	msg.clear_receiversessions();
 

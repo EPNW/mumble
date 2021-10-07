@@ -1474,8 +1474,6 @@ void Server::sendVersionMessage(ServerUser *uSource) {
 void Server::encrypted() {
 	ServerUser *uSource = qobject_cast< ServerUser * >(sender());
 
-	sendVersionMessage(uSource);
-
 	QList< QSslCertificate > certs = uSource->peerCertificateChain();
 	if (!certs.isEmpty()) {
 		const QSslCertificate &cert = certs.last();
