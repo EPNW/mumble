@@ -295,6 +295,7 @@ public:
 
 	void processMsg(ServerUser *u, const char *data, int len);
 	void sendMessage(ServerUser *u, const char *data, int len, QByteArray &cache, bool force = false);
+	void sendVersionMessage(ServerUser *u);
 	void run();
 
 	bool validateChannelName(const QString &name);

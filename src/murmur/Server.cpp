@@ -1455,8 +1455,7 @@ void Server::newClient() {
 	}
 }
 
-void Server::encrypted() {
-	ServerUser *uSource = qobject_cast< ServerUser * >(sender());
+void Server::sendVersionMessage(ServerUser *uSource) {
 	int major, minor, patch;
 	QString release;
 
@@ -1470,6 +1469,12 @@ void Server::encrypted() {
 		mpv.set_os_version(u8(meta->qsOSVersion));
 	}
 	sendMessage(uSource, mpv);
+}
+
+void Server::encrypted() {
+	ServerUser *uSource = qobject_cast< ServerUser * >(sender());
+
+	sendVersionMessage(uSource);
 
 	QList< QSslCertificate > certs = uSource->peerCertificateChain();
 	if (!certs.isEmpty()) {
@@ -1632,9 +1637,9 @@ void Server::connectionClosed(QAbstractSocket::SocketError err, const QString &r
 		qhUsers.remove(u->uiSession);
 		qhHostUsers[u->haAddress].remove(u);
 
-		quint16 port = (u->saiUdpAddress.ss_family == AF_INET6)
-						   ? (reinterpret_cast< sockaddr_in6 * >(&u->saiUdpAddress)->sin6_port)
-						   : (reinterpret_cast< sockaddr_in * >(&u->saiUdpAddress)->sin_port);
+		quint16 port                             = (u->saiUdpAddress.ss_family == AF_INET6)
+													   ? (reinterpret_cast< sockaddr_in6 * >(&u->saiUdpAddress)->sin6_port)
+													   : (reinterpret_cast< sockaddr_in * >(&u->saiUdpAddress)->sin_port);
 		const QPair< HostAddress, quint16 > &key = QPair< HostAddress, quint16 >(u->haAddress, port);
 		qhPeerUsers.remove(key);
 
