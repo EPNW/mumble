@@ -15,6 +15,9 @@
 #include "crypto/CryptState.h"
 #include "crypto/CryptStateOCB2.h"
 
+#ifdef MURMUR
+#	include "WebSocket.h"
+#endif
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QList>
 #include <QtCore/QMutex>
@@ -41,6 +44,12 @@ protected:
 	QElapsedTimer qtLastPacket;
 	unsigned int uiType;
 	int iPacketLength;
+
+#ifdef MURMUR
+	bool bFirstRead;
+	bool bUseWebSocket;
+	WebSocket webSocketState;
+#endif
 #ifdef Q_OS_WIN
 	static HANDLE hQoS;
 	DWORD dwFlow;

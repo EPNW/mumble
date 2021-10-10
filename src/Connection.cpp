@@ -30,7 +30,11 @@ Connection::Connection(QObject *p, QSslSocket *qtsSock) : QObject(p) {
 	iPacketLength        = -1;
 	bDisconnectedEmitted = false;
 	csCrypt              = std::make_unique< CryptStateOCB2 >();
-
+#ifdef MURMUR
+	bFirstRead     = true;
+	bUseWebSocket  = false;
+	webSocketState = WebSocket();
+#endif
 	static bool bDeclared = false;
 	if (!bDeclared) {
 		bDeclared = true;
@@ -113,15 +117,65 @@ void Connection::resetActivityTime() {
  */
 void Connection::socketRead() {
 	while (true) {
-		qint64 iAvailable = qtsSocket->bytesAvailable();
+		qint64 iAvailable;
+#ifdef MURMUR
+		if (bUseWebSocket) {
+			webSocketState.socketRead(qtsSocket);
+			if (webSocketState.state() == WebSocketState::Error || webSocketState.state() == WebSocketState::Closed) {
+				disconnectSocket(true);
+				return;
+			}
+			iAvailable = webSocketState.bytesAvailable();
+		} else {
+#endif
+			iAvailable = qtsSocket->bytesAvailable();
+#ifdef MURMUR
+		}
+#endif
+
 		if (iPacketLength == -1) {
 			if (iAvailable < 6)
 				return;
 
 			unsigned char a_ucBuffer[6];
 
-			qtsSocket->read(reinterpret_cast< char * >(a_ucBuffer), 6);
-			uiType        = qFromBigEndian< quint16 >(&a_ucBuffer[0]);
+#ifdef MURMUR
+			if (bFirstRead) {
+				// On the first read, bUseWebSocket is guaranteed to be false,
+				// so we do not need to make the distinction here.
+				qtsSocket->peek(reinterpret_cast< char * >(a_ucBuffer), 6);
+			} else {
+				if (bUseWebSocket) {
+					webSocketState.read(reinterpret_cast< char * >(a_ucBuffer), 6);
+				} else {
+#endif
+					qtsSocket->read(reinterpret_cast< char * >(a_ucBuffer), 6);
+#ifdef MURMUR
+				}
+			}
+#endif
+			uiType = qFromBigEndian< quint16 >(&a_ucBuffer[0]);
+
+#ifdef MURMUR
+			if (bFirstRead) {
+				bFirstRead = false;
+				if (uiType == 18245) {
+					bUseWebSocket = true;
+					continue;
+				} else {
+#	if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
+					qtsSocket->skip(6);
+#	else
+					qtsSocket->read(6);
+#	endif
+				}
+			} else if (uiType == 18245) {
+				// It is only allowed to read this type as first type,
+				// so this is a mumble protocol error!
+				disconnectSocket(true);
+				return;
+			}
+#endif
 			iPacketLength = qFromBigEndian< quint32 >(&a_ucBuffer[2]);
 			iAvailable -= 6;
 		}
@@ -135,8 +189,17 @@ void Connection::socketRead() {
 			return;
 		}
 
-		QByteArray qbaBuffer = qtsSocket->read(iPacketLength);
-		iPacketLength        = -1;
+		QByteArray qbaBuffer;
+#ifdef MURMUR
+		if (bUseWebSocket) {
+			qbaBuffer = webSocketState.read(iPacketLength);
+		} else {
+#endif
+			qbaBuffer = qtsSocket->read(iPacketLength);
+#ifdef MURMUR
+		}
+#endif
+		iPacketLength = -1;
 		iAvailable -= iPacketLength;
 
 		emit message(uiType, qbaBuffer);
@@ -185,8 +248,21 @@ void Connection::sendMessage(const ::google::protobuf::Message &msg, unsigned in
 }
 
 void Connection::sendMessage(const QByteArray &qbaMsg) {
-	if (!qbaMsg.isEmpty())
-		qtsSocket->write(qbaMsg);
+	if (!qbaMsg.isEmpty()) {
+#ifdef MURMUR
+		if (bUseWebSocket) {
+			if (webSocketState.state() == WebSocketState::Open) {
+				webSocketState.write(qtsSocket, qbaMsg);
+			} else {
+				qWarning() << "Server tried sending a message over WebSocket in a bad state:" << webSocketState.state();
+			}
+		} else {
+#endif
+			qtsSocket->write(qbaMsg);
+#ifdef MURMUR
+		}
+#endif
+	}
 }
 
 void Connection::forceFlush() {
