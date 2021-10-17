@@ -1324,6 +1324,10 @@ void Server::newClient() {
 		if (!sock)
 			return;
 
+		QSslSocket::PeerVerifyMode verifyMode =
+			Meta::mp.bCertRequired ? QSslSocket::PeerVerifyMode::QueryPeer : QSslSocket::PeerVerifyMode::VerifyNone;
+		sock->setPeerVerifyMode(verifyMode);
+
 		QHostAddress adr = sock->peerAddress();
 
 		if (meta->banCheck(adr)) {
